@@ -1,0 +1,143 @@
+
+import { HttpClient } from '@angular/common/http';
+import { Component, Inject, OnInit } from '@angular/core';
+
+import { Http } from '@angular/http';
+@Component({
+  selector: 'app-fetch-data',
+  templateUrl: './fetch-data.component.html'
+})
+export class FetchDataComponent {
+  public forecasts: WeatherForecast[];
+  public Users = [];
+  //public Users: any[];
+  Items = [];
+  constructor(private _httpService: Http) { }
+
+  //constructor(http: HttpClient, @Inject('BASE_URL') baseUrl: string) {
+  //  http.get<User[]>('http://localhost:8080/api/user').
+  //    map(res => res.json()) // <--------- Map the json I had forgot
+  //    .subscribe(result => {
+  //      this.Users = result.recordset;
+  //      console.log(result.recordset);
+  //    }, error => console.error(error));
+
+    ngOnInit() {
+      this._httpService.get('http://localhost:8080/api/user')
+        //.subscribe(values => {
+        //this.Items = values.json() as string[];
+        .map(res => res.json()) // <--------- Map the json I had forgot
+        .subscribe(result => {
+          this.Users = result.recordset;
+          console.log(result.recordset);
+        }, (errorResponse: Response) => {
+          //reject(errorResponse);
+      });
+
+    }
+  
+
+}
+interface WeatherForecast {
+  dateFormatted: string;
+  temperatureC: number;
+  temperatureF: number;
+  summary: string;
+}
+
+interface User {
+  ClientID: number;
+  ClientCode: string;
+  ClientAddress: number;
+  ClientPhone: string;
+  ContactName: string;
+  ContactPhone: string;
+  ContactEmail: string;
+}
+//=============================================== node code here ========================================
+
+//Initiallising node modules
+var express = require("express");
+var bodyParser = require("body-parser");
+var sql = require("mssql");
+var app = express();
+
+// Body Parser Middleware
+app.use(bodyParser.json());
+
+//CORS Middleware
+app.use(function (req, res, next) {
+  //Enabling CORS 
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Methods", "GET,HEAD,OPTIONS,POST,PUT");
+  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, contentType,Content-Type, Accept, Authorization");
+  next();
+});
+
+//Setting up server
+var server = app.listen(process.env.PORT || 8080, function () {
+  var port = server.address().port;
+  console.log("App now running on port", port);
+});
+
+//Initiallising connection string
+var dbConfig = {
+  server: 'localhost',
+  user: 'sa',
+  password: '007',
+  database: 'SoftifyPOS',
+  instancename: 'SQLEXPRESS'
+};
+
+//Function to connect to database and execute query
+var executeQuery = function (res, query) {
+  sql.connect(dbConfig, function (err) {
+    if (err) {
+      console.log("Error while connecting database :- " + err);
+      res.send(err);
+    }
+    else {
+      // create Request object
+      var request = new sql.Request();
+      // query to the database
+      request.query(query, function (err, rs) {
+        if (err) {
+          console.log("Error while querying database :- " + err);
+          res.send(err);
+          sql.close();
+        }
+        else {
+          console.log(res);
+          res.send(rs);
+          sql.close();
+        }
+      });
+    }
+  });
+}
+
+//GET API
+app.get("/api/user", function (req, res) {
+  var query = "select * from tblPos_Client";
+  executeQuery(res, query);
+});
+
+////POST API
+// app.post("/api/user", function(req , res){
+//                var query = "INSERT INTO [user] (Name,Email,Password) VALUES (req.body.Name,req.body.Email,req.body.Password”);
+//                executeQuery (res, query);
+//});
+
+////PUT API
+// app.put("/api/user/:id", function(req , res){
+//                var query = "UPDATE [user] SET Name= " + req.body.Name  +  " , Email=  " + req.body.Email + "  WHERE Id= " + req.params.id;
+//                executeQuery (res, query);
+//});
+
+//// DELETE API
+// app.delete("/api/user /:id", function(req , res){
+//                var query = "DELETE FROM [user] WHERE Id=" + req.params.id;
+//                executeQuery (res, query);
+//});
+
+
